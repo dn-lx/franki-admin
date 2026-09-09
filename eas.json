@@ -1,0 +1,64 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "android-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    },
+    "ios-internal": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    },
+    "production-android": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    },
+    "production-ios": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    }
+  },
+  "submit": {
+    "production-android": {},
+    "production-ios": {},
+    "production": {}
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "frankiflow-admin",
+  "version": "1.0.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "doctor": "npx expo-doctor@latest",
+    "build:android": "npx eas-cli build --platform android --profile android-apk",
+    "build:ios": "npx eas-cli build --platform ios --profile ios-internal",
+    "typecheck": "tsc --noEmit",
+    "build:dev": "npx eas-cli build --platform all --profile development",
+    "build:preview": "npx eas-cli build --platform all --profile preview",
+    "build:production": "npx eas-cli build --platform all --profile production",
+    "build:android:apk": "npx eas-cli build --platform android --profile android-apk",
+    "build:android:store": "npx eas-cli build --platform android --profile production-android",
+    "build:ios:internal": "npx eas-cli build --platform ios --profile ios-internal",
+    "build:ios:testflight": "npx eas-cli build --platform ios --profile production-ios --auto-submit",
+    "build:android:github": "bash scripts/build-android-local.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.95.0",
+    "expo": "57.0.17",
+    "expo-haptics": "57.0.2",
+    "expo-image-picker": "57.0.16",
+    "expo-sqlite": "57.0.2",
+    "expo-status-bar": "57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-url-polyfill": "2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.2"
+  }
+}
