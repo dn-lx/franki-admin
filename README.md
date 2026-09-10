@@ -1,4 +1,4 @@
-# Franki Admin — FrankiFlow + FrankiHolz
+# FrankiFlow Admin App — FrankiFlow + FrankiHolz
 
 Cross-platform iPhone and Android administration app for the FrankiFlow cleaning business and FrankiHolz accommodation business.
 
@@ -18,6 +18,7 @@ Cross-platform iPhone and Android administration app for the FrankiFlow cleaning
 - Employees database with role, employment type, hourly rate and active status.
 - Cleaning jobs with client, employee, schedule, billing mode, agreed rate and address.
 - Per-job cleaning checklist with employee completion and inspection confirmation.
+- Customer-facing bilingual service checklist editor for office, home, Airbnb, stairwell, deep and window cleaning. These are the same checklist records used by the public Preisrechner and quotation PDF.
 - Payment overview and checkout links.
 - Live price-calculator administration for service prices, minimum charge, Grundreinigung, first-month promotion, windows/equipment and VAT.
 - Website content in German and English.
@@ -50,20 +51,7 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 Never add `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, webhook signing secrets, database passwords or other private credentials to `.env` in this mobile project.
 
-Two production migrations were added for the mobile operations module:
-
-- `add_frankiflow_mobile_operations`
-- `index_frankiflow_mobile_foreign_keys`
-
-They add the admin-only tables:
-
-- `frankiflow_clients`
-- `frankiflow_employees`
-- `frankiflow_jobs`
-- `frankiflow_job_checklist_items`
-- `frankiflow_service_proofs`
-
-Every new public table has Row Level Security enabled. CRUD access is granted only to authenticated users for whom the existing `private.frankiflow_is_admin()` authorization check returns true.
+The FrankiFlow service checklist source of truth is `public.frankiflow_checklists`. Each record stores the German and English service label plus ordered bilingual sections/tasks in JSONB. Public users can read the checklist for quotation display; writes are restricted by the existing FrankiFlow admin RLS check.
 
 ## Local setup
 
@@ -92,8 +80,6 @@ npx eas login
 npx eas init
 ```
 
-After `eas init`, replace the placeholder `REPLACE_AFTER_EAS_INIT` in `app.json` if EAS did not update it automatically.
-
 Development build:
 
 ```bash
@@ -112,11 +98,11 @@ Production store binaries:
 npm run build:production
 ```
 
-App identifiers are currently:
+App identifiers remain stable:
 - iOS bundle identifier: `de.frankiflow.admin`
 - Android application ID: `de.frankiflow.admin`
 
-Store signing and publication require the owner's Apple Developer / Google Play / Expo credentials and are intentionally not stored in this source package.
+The user-facing application name is **FrankiFlow Admin App**. The technical slug and package/bundle identifiers stay unchanged so existing installations and signing configuration remain compatible.
 
 ## First login
 
@@ -130,29 +116,18 @@ src/context/                  Authentication and DE/EN language state
 src/lib/                      Supabase client and formatting helpers
 src/components/               Shared mobile UI components
 src/screens/HomeScreen.tsx    Combined business dashboard
-src/screens/flow/             FrankiFlow modules
+src/screens/flow/             FrankiFlow modules including ChecklistsView
 src/screens/holz/             FrankiHolz modules
 docs/                         Security, deployment and test documentation
 ```
 
 ## Important production notes
 
-1. Run the test plan in `docs/TEST_PLAN.md` before submitting store builds.
-2. Enable Supabase leaked-password protection before wider production use.
-3. Add app icons/splash artwork before App Store/Google Play publication.
-4. For push notifications, add Expo Notifications plus a server-side notification function. The current app relies on live dashboard updates rather than push notifications.
-5. Refunds for paid FrankiHolz bookings are intentionally not exposed as a one-tap mobile cancellation because the existing backend requires a proper refund workflow first.
+1. Run the test plan before submitting store builds.
+2. Keep service-role and Stripe secrets out of the app.
+3. Customer-facing service checklist edits go live through Supabase and affect the Preisrechner/quotation scope after saving.
+4. Refunds for paid FrankiHolz bookings are intentionally not exposed as a one-tap mobile cancellation because the existing backend requires a proper refund workflow first.
 
-## Ready-made cloud build automation
+## GitHub Android build
 
-This package now includes two CI paths:
-
-### 1. GitHub-only Android test APK
-
-`.github/workflows/android-apk.yml` can create `FrankiAdmin-Android.apk` on a GitHub-hosted Android runner without requiring an Expo account. The workflow generates the native Android project, bundles the JavaScript into the release APK, and uses the generated debug signing identity for private device testing. It is not a Google Play production signing identity.
-
-### 2. Expo EAS production builds
-
-`.github/workflows/eas-cloud-build.yml` supports the `android-apk`, `ios-internal`, `production-android`, and `production-ios` EAS profiles. This path requires an Expo project and `EXPO_TOKEN`. iOS additionally requires Apple signing credentials.
-
-See `docs/CLOUD_BUILD.md` for the exact build paths.
+`.github/workflows/android.yml` builds `FrankiFlow-Admin-App-1.2.0.apk`, validates TypeScript, installs the APK on an Android emulator and performs a launch smoke test. The application shown on the device is named **FrankiFlow Admin App**.
