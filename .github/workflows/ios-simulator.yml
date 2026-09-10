@@ -1,4 +1,4 @@
-name: Build and Test iOS Simulator
+name: Build and Test FrankiFlow Admin App iOS Simulator
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   ios-simulator:
-    name: Build, install and launch on iOS Simulator
+    name: Build, install and launch FrankiFlow Admin App on iOS Simulator
     runs-on: macos-15
     timeout-minutes: 45
 
@@ -73,9 +73,9 @@ jobs:
           APP_PATH="$(find ios-build/Build/Products/Release-iphonesimulator -maxdepth 1 -name '*.app' -print -quit)"
           test -n "$APP_PATH"
           echo "$APP_PATH" > ios-app-path.txt
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FrankiAdmin-iOS-Simulator.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" FrankiFlow-Admin-App-iOS-Simulator.zip
 
-      - name: Install and launch Franki Admin on iPhone Simulator
+      - name: Install and launch FrankiFlow Admin App on iPhone Simulator
         shell: bash
         run: |
           set -euo pipefail
@@ -114,13 +114,13 @@ jobs:
             exit 1
           fi
 
-          echo 'PASS: iOS Simulator build installed and Franki Admin launched without a detected fatal startup error.' | tee ios-smoke-test/result.txt
+          echo 'PASS: iOS Simulator build installed and FrankiFlow Admin App launched without a detected fatal startup error.' | tee ios-smoke-test/result.txt
 
       - name: Upload iOS Simulator app
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiAdmin-iOS-Simulator
-          path: FrankiAdmin-iOS-Simulator.zip
+          name: FrankiFlow-Admin-App-iOS-Simulator
+          path: FrankiFlow-Admin-App-iOS-Simulator.zip
           if-no-files-found: error
           retention-days: 30
 
@@ -128,7 +128,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiAdmin-iOS-Smoke-Test
+          name: FrankiFlow-Admin-App-iOS-Smoke-Test
           path: ios-smoke-test
           if-no-files-found: warn
           retention-days: 30
