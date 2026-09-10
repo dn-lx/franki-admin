@@ -111,7 +111,7 @@ export function HomeScreen({ onOpen }: Props) {
       <View style={styles.hero}>
         <View style={styles.heroGlow} />
         <View style={styles.heroTop}>
-          <View style={styles.heroBadge}><View style={styles.liveDot} /><Text style={styles.heroBadgeText}>{de ? 'ADMIN LIVE' : 'ADMIN LIVE'}</Text></View>
+          <View style={styles.heroBadge}><View style={styles.liveDot} /><Text style={styles.heroBadgeText}>ADMIN LIVE</Text></View>
           <Text style={styles.heroMeta}>{de ? 'Heute' : 'Today'}</Text>
         </View>
         <Text style={styles.heroTitle}>{de ? `Hallo, ${firstName}` : `Hello, ${firstName}`}</Text>
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   listTitle: { color: colors.text, fontWeight: '900', fontSize: 14.5, marginBottom: 10 },
   compactCard: { paddingVertical: 13, marginBottom: 9, borderRadius: 18 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  itemTitle: { color: colors.text, fontWeight: '850', fontSize: 13.5 },
+  itemTitle: { color: colors.text, fontWeight: '800', fontSize: 13.5 },
   itemSub: { color: colors.muted, fontSize: 10.5, marginTop: 4 },
   priceWrap: { alignItems: 'flex-end', gap: 5 },
   price: { color: colors.text, fontWeight: '900', fontSize: 11.5 },
