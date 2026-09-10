@@ -1,11 +1,12 @@
 name: Smoke Test FrankiFlow Admin App APK
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/smoke-test-apk.yml'
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Successful Android build workflow run ID containing the APK artifact'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -13,18 +14,18 @@ permissions:
 
 jobs:
   smoke-test:
-    name: Install, launch and exercise FrankiFlow Admin App APK on Android emulator
+    name: Install and launch FrankiFlow Admin App APK on Android emulator
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
     steps:
-      - name: Download APK from successful build
+      - name: Download APK from selected successful build
         uses: actions/download-artifact@v4
         with:
           name: FrankiFlow-Admin-App-Android-1.2.0
           path: release
           repository: dn-lx/franki-admin
-          run-id: 34446742238
+          run-id: ${{ inputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable KVM acceleration
@@ -57,7 +58,7 @@ jobs:
             adb pull /sdcard/window-initial.xml smoke-test-output/window-initial.xml
             adb exec-out screencap -p > smoke-test-output/login-screen-initial.png
             grep -Eiq 'FrankiFlow Admin App|Willkommen zurück|Welcome back' smoke-test-output/window-initial.xml
-            grep -Eiq 'Admin login|Anmelden|Sign in' smoke-test-output/window-initial.xml
+            grep -Eiq 'Anmelden|Sign in' smoke-test-output/window-initial.xml
             grep -Eiq 'info@frankiflow.de' smoke-test-output/window-initial.xml
             adb logcat -d > smoke-test-output/logcat.txt
             adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
