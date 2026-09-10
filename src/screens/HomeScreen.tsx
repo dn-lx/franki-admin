@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BrandLogo } from '../components/BrandLogo';
 import { Badge, Card, ErrorBanner, LoadingBlock, MetricCard, SectionHeader, StatGrid } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -24,6 +25,7 @@ const initial: Metrics = { newQuotes: 0, openJobs: 0, flowPaid30: 0, pendingBook
 export function HomeScreen({ onOpen }: Props) {
   const { access, user } = useAuth();
   const { language } = useLanguage();
+  const de = language === 'de';
   const [metrics, setMetrics] = useState(initial);
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [bookings, setBookings] = useState<HolzBooking[]>([]);
@@ -94,37 +96,76 @@ export function HomeScreen({ onOpen }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  const firstName = useMemo(() => user?.email?.split('@')[0] ?? 'Admin', [user?.email]);
-  if (loading) return <LoadingBlock label={language === 'de' ? 'Dashboard wird geladen …' : 'Loading dashboard …'} />;
+  const firstName = useMemo(() => {
+    const name = user?.email?.split('@')[0] ?? 'Admin';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }, [user?.email]);
+
+  if (loading) return <LoadingBlock label={de ? 'Dashboard wird geladen …' : 'Loading dashboard …'} />;
 
   return (
     <ScrollView
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
+      refreshControl={<RefreshControl tintColor={colors.accent} refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} />}
     >
-      <Text style={styles.eyebrow}>{language === 'de' ? 'FRANKI ADMIN' : 'FRANKI ADMIN'}</Text>
-      <Text style={styles.title}>{language === 'de' ? `Hallo, ${firstName}` : `Hello, ${firstName}`}</Text>
-      <Text style={styles.subtitle}>{language === 'de' ? 'Dein Geschäft auf einen Blick.' : 'Your businesses at a glance.'}</Text>
+      <View style={styles.hero}>
+        <View style={styles.heroGlow} />
+        <View style={styles.heroTop}>
+          <View style={styles.heroBadge}><View style={styles.liveDot} /><Text style={styles.heroBadgeText}>{de ? 'ADMIN LIVE' : 'ADMIN LIVE'}</Text></View>
+          <Text style={styles.heroMeta}>{de ? 'Heute' : 'Today'}</Text>
+        </View>
+        <Text style={styles.heroTitle}>{de ? `Hallo, ${firstName}` : `Hello, ${firstName}`}</Text>
+        <Text style={styles.heroSub}>{de ? 'FrankiFlow und FrankiHolz in einem klaren Arbeitsbereich.' : 'FrankiFlow and FrankiHolz in one clear workspace.'}</Text>
+        <View style={styles.heroSummary}>
+          <View style={styles.heroSummaryItem}><Text style={styles.heroSummaryValue}>{metrics.newQuotes + metrics.pendingBookings}</Text><Text style={styles.heroSummaryLabel}>{de ? 'Neue Anfragen' : 'New requests'}</Text></View>
+          <View style={styles.heroDivider} />
+          <View style={styles.heroSummaryItem}><Text style={styles.heroSummaryValue}>{metrics.openJobs + metrics.upcomingBookings}</Text><Text style={styles.heroSummaryLabel}>{de ? 'Aktiv / bevorstehend' : 'Active / upcoming'}</Text></View>
+        </View>
+      </View>
+
       <ErrorBanner message={error} />
+
+      <SectionHeader title={de ? 'Deine Bereiche' : 'Your workspaces'} subtitle={de ? 'Direkter Zugriff auf beide Geschäftsbereiche.' : 'Direct access to both business areas.'} />
+
+      {access.frankiflow ? (
+        <Pressable onPress={() => onOpen('flow')} style={({ pressed }) => [styles.businessCard, pressed && styles.pressed]}>
+          <View style={styles.businessCardTop}>
+            <BrandLogo kind="frankiflow" compact />
+            <Badge text="LIVE" tone="success" />
+          </View>
+          <Text style={styles.businessHeadline}>{de ? 'Reinigung steuern' : 'Run cleaning operations'}</Text>
+          <Text style={styles.businessDescription}>{de ? 'Anfragen, Aufträge, Team, Zahlungen und Website.' : 'Quotes, jobs, team, payments and website.'}</Text>
+          <View style={styles.businessFooter}><Text style={styles.businessLink}>{de ? 'FrankiFlow öffnen' : 'Open FrankiFlow'}</Text><Text style={styles.businessArrow}>→</Text></View>
+        </Pressable>
+      ) : null}
+
+      {access.frankiholz ? (
+        <Pressable onPress={() => onOpen('holz')} style={({ pressed }) => [styles.businessCard, styles.holzCard, pressed && styles.pressed]}>
+          <View style={styles.businessCardTop}>
+            <BrandLogo kind="frankiholz" compact />
+            <Badge text="LIVE" tone="holz" />
+          </View>
+          <Text style={styles.businessHeadline}>{de ? 'Unterkunft steuern' : 'Run accommodation'}</Text>
+          <Text style={styles.businessDescription}>{de ? 'Buchungen, Kalender, Zimmer, Preise und Airbnb-Sync.' : 'Bookings, calendar, rooms, pricing and Airbnb sync.'}</Text>
+          <View style={styles.businessFooter}><Text style={[styles.businessLink, { color: colors.holzDark }]}>{de ? 'FrankiHolz öffnen' : 'Open FrankiHolz'}</Text><Text style={[styles.businessArrow, { color: colors.holzDark }]}>→</Text></View>
+        </Pressable>
+      ) : null}
 
       {access.frankiflow ? (
         <>
-          <SectionHeader title="FrankiFlow" subtitle={language === 'de' ? 'Reinigung & Objektbetreuung' : 'Cleaning & property services'} right={<Badge text="LIVE" tone="success" />} />
+          <SectionHeader title="FrankiFlow" subtitle={de ? 'Leistung der letzten 30 Tage' : 'Performance over the last 30 days'} />
           <StatGrid>
-            <MetricCard label={language === 'de' ? 'Neue Anfragen' : 'New quotes'} value={metrics.newQuotes} />
-            <MetricCard label={language === 'de' ? 'Offene Aufträge' : 'Open jobs'} value={metrics.openJobs} />
-            <MetricCard label={language === 'de' ? 'Bezahlt · 30 Tage' : 'Paid · 30 days'} value={euro(metrics.flowPaid30)} />
-            <MetricCard label={language === 'de' ? 'Adminrolle' : 'Admin role'} value={(access.frankiflowRole ?? 'admin').toUpperCase()} accent="neutral" />
+            <MetricCard label={de ? 'Neue Anfragen' : 'New quotes'} value={metrics.newQuotes} />
+            <MetricCard label={de ? 'Offene Aufträge' : 'Open jobs'} value={metrics.openJobs} />
+            <MetricCard label={de ? 'Bezahlt · 30 Tage' : 'Paid · 30 days'} value={euro(metrics.flowPaid30)} />
+            <MetricCard label={de ? 'Adminrolle' : 'Admin role'} value={(access.frankiflowRole ?? 'admin').toUpperCase()} accent="neutral" />
           </StatGrid>
-          <Pressable onPress={() => onOpen('flow')} style={styles.moduleButton}>
-            <Text style={styles.moduleButtonText}>{language === 'de' ? 'FrankiFlow öffnen' : 'Open FrankiFlow'}</Text><Text style={styles.arrow}>›</Text>
-          </Pressable>
-          <Text style={styles.listTitle}>{language === 'de' ? 'Neueste Anfragen' : 'Latest quotes'}</Text>
+          <Text style={styles.listTitle}>{de ? 'Neueste Anfragen' : 'Latest quotes'}</Text>
           {quotes.length ? quotes.map((q) => (
             <Card key={q.id} style={styles.compactCard}>
               <View style={styles.rowBetween}>
                 <View style={{ flex: 1 }}><Text style={styles.itemTitle}>{q.customer_name}</Text><Text style={styles.itemSub}>{titleCase(q.service_key)} · {shortDate(q.created_at)}</Text></View>
-                <Badge text={titleCase(q.status)} tone={q.status === 'new' ? 'warning' : q.status === 'accepted' ? 'success' : 'neutral'} />
+                <Badge text={titleCase(q.status)} tone={q.status === 'new' ? 'warning' : q.status === 'won' ? 'success' : 'neutral'} />
               </View>
             </Card>
           )) : <Text style={styles.none}>—</Text>}
@@ -132,23 +173,20 @@ export function HomeScreen({ onOpen }: Props) {
       ) : null}
 
       {access.frankiholz ? (
-        <View style={{ marginTop: 14 }}>
-          <SectionHeader title="FrankiHolz" subtitle={language === 'de' ? 'Unterkunft & Buchungen' : 'Accommodation & bookings'} right={<Badge text="LIVE" tone="holz" />} />
+        <View style={styles.sectionGap}>
+          <SectionHeader title="FrankiHolz" subtitle={de ? 'Buchungsleistung der letzten 30 Tage' : 'Booking performance over the last 30 days'} />
           <StatGrid>
-            <MetricCard label={language === 'de' ? 'Offene Anfragen' : 'Pending bookings'} value={metrics.pendingBookings} accent="holz" />
-            <MetricCard label={language === 'de' ? 'Anreisen · 30 Tage' : 'Arrivals · 30 days'} value={metrics.upcomingBookings} accent="holz" />
-            <MetricCard label={language === 'de' ? 'Bezahlt · 30 Tage' : 'Paid · 30 days'} value={euro(metrics.holzPaid30)} accent="holz" />
-            <MetricCard label={language === 'de' ? 'Synchronisation' : 'Calendar sync'} value="iCal" accent="neutral" />
+            <MetricCard label={de ? 'Offene Anfragen' : 'Pending bookings'} value={metrics.pendingBookings} accent="holz" />
+            <MetricCard label={de ? 'Anreisen · 30 Tage' : 'Arrivals · 30 days'} value={metrics.upcomingBookings} accent="holz" />
+            <MetricCard label={de ? 'Bezahlt · 30 Tage' : 'Paid · 30 days'} value={euro(metrics.holzPaid30)} accent="holz" />
+            <MetricCard label={de ? 'Synchronisation' : 'Calendar sync'} value="iCal" accent="neutral" />
           </StatGrid>
-          <Pressable onPress={() => onOpen('holz')} style={[styles.moduleButton, { backgroundColor: colors.holz }]}>
-            <Text style={styles.moduleButtonText}>{language === 'de' ? 'FrankiHolz öffnen' : 'Open FrankiHolz'}</Text><Text style={styles.arrow}>›</Text>
-          </Pressable>
-          <Text style={styles.listTitle}>{language === 'de' ? 'Neueste Buchungen' : 'Latest bookings'}</Text>
+          <Text style={styles.listTitle}>{de ? 'Neueste Buchungen' : 'Latest bookings'}</Text>
           {bookings.length ? bookings.map((b) => (
             <Card key={b.id} style={styles.compactCard}>
               <View style={styles.rowBetween}>
                 <View style={{ flex: 1 }}><Text style={styles.itemTitle}>{b.guest_name}</Text><Text style={styles.itemSub}>{b.frankiholz_rooms?.name ?? 'Room'} · {b.check_in} → {b.check_out}</Text></View>
-                <View style={{ alignItems: 'flex-end', gap: 5 }}><Badge text={titleCase(b.status)} tone={b.status === 'confirmed' ? 'success' : b.status === 'pending' ? 'warning' : 'neutral'} /><Text style={styles.price}>{euro(b.total_price)}</Text></View>
+                <View style={styles.priceWrap}><Badge text={titleCase(b.status)} tone={b.status === 'confirmed' ? 'success' : b.status === 'pending' ? 'warning' : 'neutral'} /><Text style={styles.price}>{euro(b.total_price)}</Text></View>
               </View>
             </Card>
           )) : <Text style={styles.none}>—</Text>}
@@ -159,18 +197,37 @@ export function HomeScreen({ onOpen }: Props) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, paddingBottom: 110 },
-  eyebrow: { color: colors.primary, fontWeight: '900', fontSize: 11, letterSpacing: 1.3 },
-  title: { color: colors.text, fontSize: 30, fontWeight: '900', letterSpacing: -0.9, marginTop: 5 },
-  subtitle: { color: colors.muted, fontSize: 14, marginTop: 4, marginBottom: 28 },
-  moduleButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: 17, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
-  moduleButtonText: { color: colors.white, fontWeight: '900', fontSize: 14 },
-  arrow: { color: colors.white, fontSize: 26, lineHeight: 20 },
-  listTitle: { color: colors.text, fontWeight: '900', fontSize: 15, marginBottom: 10 },
-  compactCard: { paddingVertical: 13, marginBottom: 9 },
+  content: { padding: spacing.md, paddingTop: 14, paddingBottom: 112 },
+  hero: { backgroundColor: colors.primary, borderRadius: radius.xl, padding: 22, marginBottom: 22, overflow: 'hidden', shadowColor: colors.primaryDark, shadowOpacity: 0.18, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 7 },
+  heroGlow: { position: 'absolute', width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(34,169,181,0.22)', right: -48, top: -62 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.12)' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#5DE1C1' },
+  heroBadgeText: { color: colors.white, fontWeight: '900', fontSize: 9.5, letterSpacing: 1 },
+  heroMeta: { color: '#C8D9E2', fontSize: 11, fontWeight: '800' },
+  heroTitle: { color: colors.white, fontSize: 31, fontWeight: '900', letterSpacing: -1 },
+  heroSub: { color: '#D3E2E8', fontSize: 13, lineHeight: 19, marginTop: 7, maxWidth: 310 },
+  heroSummary: { marginTop: 24, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.2)', paddingTop: 17, flexDirection: 'row', alignItems: 'center' },
+  heroSummaryItem: { flex: 1 },
+  heroSummaryValue: { color: colors.white, fontWeight: '900', fontSize: 22, letterSpacing: -0.5 },
+  heroSummaryLabel: { color: '#BFD3DC', fontWeight: '700', fontSize: 10.5, marginTop: 2 },
+  heroDivider: { width: StyleSheet.hairlineWidth, height: 38, backgroundColor: 'rgba(255,255,255,0.22)', marginHorizontal: 18 },
+  businessCard: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 17, marginBottom: 12, shadowColor: colors.primaryDark, shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 7 }, elevation: 3 },
+  holzCard: { borderColor: '#CBECEF', backgroundColor: '#FBFEFE' },
+  pressed: { opacity: 0.83, transform: [{ scale: 0.992 }] },
+  businessCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 50 },
+  businessHeadline: { color: colors.text, fontSize: 18, fontWeight: '900', letterSpacing: -0.45, marginTop: 14 },
+  businessDescription: { color: colors.muted, fontSize: 12.5, lineHeight: 18, marginTop: 5 },
+  businessFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 17, paddingTop: 13, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  businessLink: { color: colors.primary, fontWeight: '900', fontSize: 12.5 },
+  businessArrow: { color: colors.primary, fontWeight: '900', fontSize: 18 },
+  listTitle: { color: colors.text, fontWeight: '900', fontSize: 14.5, marginBottom: 10 },
+  compactCard: { paddingVertical: 13, marginBottom: 9, borderRadius: 18 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  itemTitle: { color: colors.text, fontWeight: '800', fontSize: 14 },
-  itemSub: { color: colors.muted, fontSize: 11, marginTop: 3 },
-  price: { color: colors.text, fontWeight: '800', fontSize: 12 },
+  itemTitle: { color: colors.text, fontWeight: '850', fontSize: 13.5 },
+  itemSub: { color: colors.muted, fontSize: 10.5, marginTop: 4 },
+  priceWrap: { alignItems: 'flex-end', gap: 5 },
+  price: { color: colors.text, fontWeight: '900', fontSize: 11.5 },
   none: { color: colors.muted, marginBottom: 20 },
+  sectionGap: { marginTop: 17 },
 });
