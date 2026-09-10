@@ -44,17 +44,13 @@ jobs:
           script: |
             set -eu
             mkdir -p smoke-test-output
-
             adb install -r release/FrankiAdmin-Android.apk
             adb shell pm list packages | grep 'package:de.frankiflow.admin'
-
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
             sleep 10
-
             adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus-initial.txt || true
             grep -q 'de.frankiflow.admin' smoke-test-output/window-focus-initial.txt
-
             adb shell uiautomator dump /sdcard/window-initial.xml
             adb pull /sdcard/window-initial.xml smoke-test-output/window-initial.xml
             adb exec-out screencap -p > smoke-test-output/login-screen-initial.png
@@ -62,32 +58,23 @@ jobs:
             grep -Eiq 'Admin login' smoke-test-output/window-initial.xml
             grep -Eiq 'Sign in' smoke-test-output/window-initial.xml
             grep -Eiq 'info@frankiflow.de' smoke-test-output/window-initial.xml
-
-            # Exercise password entry and the real Supabase authentication request.
             adb shell input tap 540 1515
             adb shell input text 'DefinitelyWrong123'
             adb shell input keyevent 4
             sleep 1
             adb shell input tap 540 1684
             sleep 8
-
             adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus-after-login.txt || true
             grep -q 'de.frankiflow.admin' smoke-test-output/window-focus-after-login.txt
-
             adb shell uiautomator dump /sdcard/window-after-login.xml
             adb pull /sdcard/window-after-login.xml smoke-test-output/window-after-login.xml
             adb exec-out screencap -p > smoke-test-output/login-screen-after-invalid-login.png
             adb logcat -d > smoke-test-output/logcat.txt
             adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
             adb shell ps -A | grep 'de.frankiflow.admin' > smoke-test-output/process.txt || true
-
-            if grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'; then
-              echo 'Fatal Android runtime error detected for Franki Admin.' | tee smoke-test-output/result.txt
-              exit 1
-            fi
-
+            grep -q 'de.frankiflow.admin' smoke-test-output/process.txt
+            ! sh -c "grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'"
             grep -Eiq 'Invalid login credentials|invalid.*credentials' smoke-test-output/window-after-login.xml
-
             echo 'PASS: APK installed; Franki Admin launched and rendered; login controls worked; Supabase Auth returned the expected invalid-credentials response; no fatal app crash was detected.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
