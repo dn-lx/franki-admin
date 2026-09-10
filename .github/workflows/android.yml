@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-apk:
-    name: Build FrankiFlow Admin App 1.2.0 APK
+    name: Build FrankiFlow Admin App 1.2.1 APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -41,17 +41,18 @@ jobs:
       - name: Validate TypeScript
         run: npm run typecheck
 
-      - name: Refresh official FrankiFlow app icon from Drive
+      - name: Apply approved dark FrankiFlow app icon
         run: |
           cp assets/icon.png /tmp/franki-fallback-icon.png
-          curl -L --fail --retry 2 'https://drive.google.com/uc?export=download&id=1hMALKrQmg1x7gKXCPo9ZFGfepbo7u-s-' -o /tmp/frankiflow-icon.png || true
+          curl -L --fail --retry 3 'https://drive.google.com/uc?export=download&id=1X-h_fzBVMiWtomia9Em2lW_fJYdOYLFY' -o /tmp/frankiflow-icon.png || true
           if file /tmp/frankiflow-icon.png 2>/dev/null | grep -qi 'PNG image'; then
             cp /tmp/frankiflow-icon.png assets/icon.png
             cp /tmp/frankiflow-icon.png assets/adaptive-icon.png
-            echo 'Official FrankiFlow app icon applied.'
+            echo 'Approved dark FrankiFlow icon applied.'
           else
             cp /tmp/franki-fallback-icon.png assets/icon.png
-            echo 'Drive icon was not publicly downloadable; repository fallback retained.'
+            cp /tmp/franki-fallback-icon.png assets/adaptive-icon.png
+            echo 'Approved icon could not be downloaded; repository fallback retained.'
           fi
 
       - name: Generate native Android project
@@ -72,16 +73,16 @@ jobs:
       - name: Prepare APK artifact
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin-App-1.2.0.apk
-          sha256sum release/FrankiFlow-Admin-App-1.2.0.apk > release/FrankiFlow-Admin-App-1.2.0.apk.sha256
+          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin-App-1.2.1.apk
+          sha256sum release/FrankiFlow-Admin-App-1.2.1.apk > release/FrankiFlow-Admin-App-1.2.1.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-1.2.0
+          name: FrankiFlow-Admin-App-Android-1.2.1
           path: |
-            release/FrankiFlow-Admin-App-1.2.0.apk
-            release/FrankiFlow-Admin-App-1.2.0.apk.sha256
+            release/FrankiFlow-Admin-App-1.2.1.apk
+            release/FrankiFlow-Admin-App-1.2.1.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -95,7 +96,7 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-1.2.0
+          name: FrankiFlow-Admin-App-Android-1.2.1
           path: release
 
       - name: Enable KVM acceleration
@@ -115,7 +116,7 @@ jobs:
           script: |
             set -eu
             mkdir -p smoke-test-output
-            adb install -r release/FrankiFlow-Admin-App-1.2.0.apk
+            adb install -r release/FrankiFlow-Admin-App-1.2.1.apk
             adb shell pm list packages | grep 'package:de.frankiflow.admin'
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
@@ -139,7 +140,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-Smoke-Test-1.2.0
+          name: FrankiFlow-Admin-App-Android-Smoke-Test-1.2.1
           path: smoke-test-output
           if-no-files-found: warn
           retention-days: 30
