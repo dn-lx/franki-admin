@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
   securityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 16 },
   securityIcon: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center' },
   securityIconText: { color: colors.success, fontSize: 10, fontWeight: '900' },
-  securityText: { color: colors.muted, fontSize: 10.5, fontWeight: '650' },
+  securityText: { color: colors.muted, fontSize: 10.5, fontWeight: '600' },
   footer: { color: colors.muted, textAlign: 'center', fontSize: 10.5, marginTop: 20, lineHeight: 16 },
 });
