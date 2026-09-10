@@ -24,6 +24,15 @@
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
       }
     },
+    "ios-simulator": {
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bdeajozhylypiidrldka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2"
+      }
+    },
     "ios-internal": {
       "distribution": "internal",
       "env": {
