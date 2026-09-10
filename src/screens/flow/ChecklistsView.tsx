@@ -34,7 +34,8 @@ export function ChecklistsView() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     const { data, error: e } = await supabase
       .from('frankiflow_checklists')
       .select('service_key,label_de,label_en,sections,updated_at');
@@ -44,7 +45,8 @@ export function ChecklistsView() {
         .map((row) => ({ ...row, sections: normaliseSections(row.sections) } as ChecklistRow))
         .sort((a, b) => order.indexOf(a.service_key) - order.indexOf(b.service_key));
       setRows(next);
-      if (next.length && !next.some((x) => x.service_key === activeKey)) setActiveKey(next[0].service_key);
+      const first = next[0];
+      if (first && !next.some((x) => x.service_key === activeKey)) setActiveKey(first.service_key);
     }
     setLoading(false);
   }, [activeKey]);
@@ -56,11 +58,43 @@ export function ChecklistsView() {
   function patchActive(mutator: (draft: ChecklistRow) => void) {
     setRows((prev) => prev.map((row) => {
       if (row.service_key !== activeKey) return row;
-      const draft: ChecklistRow = { ...row, sections: row.sections.map((s) => ({ ...s, items: s.items.map((i) => ({ ...i })) })) };
+      const draft: ChecklistRow = {
+        ...row,
+        sections: row.sections.map((section) => ({
+          ...section,
+          items: section.items.map((item) => ({ ...item })),
+        })),
+      };
       mutator(draft);
       return draft;
     }));
     setSuccess(null);
+  }
+
+  function patchSection(index: number, mutator: (section: ChecklistSection) => void) {
+    patchActive((row) => {
+      const section = row.sections[index];
+      if (section) mutator(section);
+    });
+  }
+
+  function patchItem(sectionIndex: number, itemIndex: number, mutator: (item: ChecklistItem) => void) {
+    patchSection(sectionIndex, (section) => {
+      const item = section.items[itemIndex];
+      if (item) mutator(item);
+    });
+  }
+
+  function moveSection(index: number, direction: -1 | 1) {
+    patchActive((row) => {
+      const target = index + direction;
+      if (index < 0 || target < 0 || index >= row.sections.length || target >= row.sections.length) return;
+      const current = row.sections[index];
+      const other = row.sections[target];
+      if (!current || !other) return;
+      row.sections[index] = other;
+      row.sections[target] = current;
+    });
   }
 
   async function save() {
@@ -71,7 +105,9 @@ export function ChecklistsView() {
       setError(de ? 'Bitte alle deutschen und englischen Bezeichnungen ausfüllen.' : 'Please complete all German and English labels.');
       return;
     }
-    setSaving(true); setError(null); setSuccess(null);
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
     const { error: e } = await supabase.from('frankiflow_checklists').update({
       label_de: active.label_de.trim(),
       label_en: active.label_en.trim(),
@@ -84,7 +120,9 @@ export function ChecklistsView() {
   }
 
   function removeSection(index: number) {
-    Alert.alert(de ? 'Bereich löschen?' : 'Delete section?', active?.sections[index]?.[de ? 'title_de' : 'title_en'] ?? '', [
+    const section = active?.sections[index];
+    const sectionName = section ? (de ? section.title_de : section.title_en) : '';
+    Alert.alert(de ? 'Bereich löschen?' : 'Delete section?', sectionName, [
       { text: de ? 'Abbrechen' : 'Cancel', style: 'cancel' },
       { text: de ? 'Löschen' : 'Delete', style: 'destructive', onPress: () => patchActive((row) => { row.sections.splice(index, 1); }) },
     ]);
@@ -112,22 +150,22 @@ export function ChecklistsView() {
         <View style={styles.sectionTop}>
           <Text style={styles.sectionTitle}>{de ? `Bereich ${sectionIndex + 1}` : `Section ${sectionIndex + 1}`}</Text>
           <View style={styles.inlineButtons}>
-            <Pressable disabled={sectionIndex === 0} onPress={() => patchActive((row) => { const i = sectionIndex; [row.sections[i - 1], row.sections[i]] = [row.sections[i], row.sections[i - 1]]; })} style={[styles.iconButton, sectionIndex === 0 && styles.disabled]}><Text style={styles.iconText}>↑</Text></Pressable>
-            <Pressable disabled={sectionIndex === active.sections.length - 1} onPress={() => patchActive((row) => { const i = sectionIndex; [row.sections[i + 1], row.sections[i]] = [row.sections[i], row.sections[i + 1]]; })} style={[styles.iconButton, sectionIndex === active.sections.length - 1 && styles.disabled]}><Text style={styles.iconText}>↓</Text></Pressable>
+            <Pressable disabled={sectionIndex === 0} onPress={() => moveSection(sectionIndex, -1)} style={[styles.iconButton, sectionIndex === 0 && styles.disabled]}><Text style={styles.iconText}>↑</Text></Pressable>
+            <Pressable disabled={sectionIndex === active.sections.length - 1} onPress={() => moveSection(sectionIndex, 1)} style={[styles.iconButton, sectionIndex === active.sections.length - 1 && styles.disabled]}><Text style={styles.iconText}>↓</Text></Pressable>
             <Pressable onPress={() => removeSection(sectionIndex)} style={[styles.iconButton, styles.dangerButton]}><Text style={styles.dangerText}>×</Text></Pressable>
           </View>
         </View>
-        <FormField label="Titel DE" value={section.title_de} onChangeText={(v) => patchActive((row) => { row.sections[sectionIndex].title_de = v; })} />
-        <FormField label="Title EN" value={section.title_en} onChangeText={(v) => patchActive((row) => { row.sections[sectionIndex].title_en = v; })} />
-        <ToggleRow label={de ? 'Nur nach ausdrücklicher Vereinbarung / optional' : 'Only when specifically agreed / optional'} value={section.optional} onValueChange={(v) => patchActive((row) => { row.sections[sectionIndex].optional = v; })} />
+        <FormField label="Titel DE" value={section.title_de} onChangeText={(v) => patchSection(sectionIndex, (s) => { s.title_de = v; })} />
+        <FormField label="Title EN" value={section.title_en} onChangeText={(v) => patchSection(sectionIndex, (s) => { s.title_en = v; })} />
+        <ToggleRow label={de ? 'Nur nach ausdrücklicher Vereinbarung / optional' : 'Only when specifically agreed / optional'} value={section.optional} onValueChange={(v) => patchSection(sectionIndex, (s) => { s.optional = v; })} />
 
         <Text style={styles.tasksTitle}>{de ? 'Aufgaben' : 'Tasks'}</Text>
         {section.items.map((item, itemIndex) => <View key={itemIndex} style={styles.taskBox}>
-          <FormField label={`DE · ${itemIndex + 1}`} value={item.de} onChangeText={(v) => patchActive((row) => { row.sections[sectionIndex].items[itemIndex].de = v; })} />
-          <FormField label={`EN · ${itemIndex + 1}`} value={item.en} onChangeText={(v) => patchActive((row) => { row.sections[sectionIndex].items[itemIndex].en = v; })} />
-          <Button compact variant="ghost" title={de ? 'Aufgabe entfernen' : 'Remove task'} onPress={() => patchActive((row) => { row.sections[sectionIndex].items.splice(itemIndex, 1); })} />
+          <FormField label={`DE · ${itemIndex + 1}`} value={item.de} onChangeText={(v) => patchItem(sectionIndex, itemIndex, (i) => { i.de = v; })} />
+          <FormField label={`EN · ${itemIndex + 1}`} value={item.en} onChangeText={(v) => patchItem(sectionIndex, itemIndex, (i) => { i.en = v; })} />
+          <Button compact variant="ghost" title={de ? 'Aufgabe entfernen' : 'Remove task'} onPress={() => patchSection(sectionIndex, (s) => { s.items.splice(itemIndex, 1); })} />
         </View>)}
-        <Button compact variant="secondary" title={de ? '+ Aufgabe hinzufügen' : '+ Add task'} onPress={() => patchActive((row) => { row.sections[sectionIndex].items.push({ de: '', en: '' }); })} />
+        <Button compact variant="secondary" title={de ? '+ Aufgabe hinzufügen' : '+ Add task'} onPress={() => patchSection(sectionIndex, (s) => { s.items.push({ de: '', en: '' }); })} />
       </Card>)}
 
       <Button variant="secondary" title={de ? '+ Bereich hinzufügen' : '+ Add section'} onPress={() => patchActive((row) => { row.sections.push({ title_de: 'Neuer Bereich', title_en: 'New section', optional: false, items: [{ de: 'Neue Aufgabe', en: 'New task' }] }); })} />
