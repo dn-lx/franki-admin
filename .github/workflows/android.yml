@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   EXPO_PUBLIC_SUPABASE_URL: https://bdeajozhylypiidrldka.supabase.co
@@ -154,3 +154,54 @@ jobs:
           path: smoke-test-output
           if-no-files-found: warn
           retention-days: 30
+
+  publish-release:
+    name: Publish permanent APK download
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download tested APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: FrankiFlow-Admin-App-Android-1.2.2
+          path: release
+
+      - name: Prepare stable APK filenames
+        run: |
+          cp release/FrankiFlow-Admin-App-1.2.2.apk release/FrankiFlow-Admin.apk
+          sha256sum release/FrankiFlow-Admin.apk > release/FrankiFlow-Admin.apk.sha256
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          TAG="android-build-${GITHUB_RUN_NUMBER}"
+          TITLE="FrankiFlow Admin App Android Build ${GITHUB_RUN_NUMBER}"
+          NOTES="Tested Android APK built from commit ${GITHUB_SHA}.\n\nPermanent latest-download URL:\nhttps://github.com/${GITHUB_REPOSITORY}/releases/latest/download/FrankiFlow-Admin.apk"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              release/FrankiFlow-Admin.apk \
+              release/FrankiFlow-Admin.apk.sha256 \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"
+            gh release edit "$TAG" \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --latest \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" \
+              release/FrankiFlow-Admin.apk \
+              release/FrankiFlow-Admin.apk.sha256 \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes "$NOTES" \
+              --latest \
+              --repo "$GITHUB_REPOSITORY"
+          fi
+
+          echo "Latest APK: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/FrankiFlow-Admin.apk"
