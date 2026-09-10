@@ -41,7 +41,7 @@ jobs:
       - name: Validate TypeScript
         run: npm run typecheck
 
-      - name: Apply safe FrankiFlow launcher icons
+      - name: Apply final safe-zone FrankiFlow launcher icons
         run: |
           cp assets/icon.png /tmp/franki-fallback-icon.png
           cp assets/adaptive-icon.png /tmp/franki-fallback-adaptive.png
@@ -59,7 +59,7 @@ jobs:
 
           if file /tmp/frankiflow-adaptive.png 2>/dev/null | grep -qi 'PNG image'; then
             cp /tmp/frankiflow-adaptive.png assets/adaptive-icon.png
-            echo 'Safe transparent adaptive foreground applied.'
+            echo 'Final padded transparent adaptive foreground applied.'
           else
             cp /tmp/franki-fallback-adaptive.png assets/adaptive-icon.png
             echo 'Adaptive icon download failed; repository fallback retained.'
