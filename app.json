@@ -2,24 +2,24 @@
   "expo": {
     "name": "FrankiFlow Admin App",
     "slug": "frankiflow-admin",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "de.frankiflow.admin",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "de.frankiflow.admin",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#052A4B"
+        "backgroundColor": "#051C3F"
       },
       "edgeToEdgeEnabled": true
     },
