@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FrankiFlow-Admin",
+    "name": "FrankiFlow Admin App",
     "slug": "frankiflow-admin",
     "version": "1.2.0",
     "orientation": "portrait",
@@ -25,8 +25,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "FrankiFlow-Admin uses your photo library only when you choose an image for FrankiFlow or FrankiHolz content.",
-          "cameraPermission": "FrankiFlow-Admin uses the camera only when you choose to take a photo for business content.",
+          "photosPermission": "FrankiFlow Admin App uses your photo library only when you choose an image for FrankiFlow or FrankiHolz content.",
+          "cameraPermission": "FrankiFlow Admin App uses the camera only when you choose to take a photo for business content.",
           "microphonePermission": false
         }
       ]
