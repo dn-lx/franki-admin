@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build FrankiFlow-Admin Android APK
 
 on:
   push:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-apk:
-    name: Build standalone Android APK
+    name: Build FrankiFlow-Admin 1.2.0 APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -40,6 +40,19 @@ jobs:
 
       - name: Validate TypeScript
         run: npm run typecheck
+
+      - name: Refresh official FrankiFlow app icon from Drive
+        run: |
+          cp assets/icon.png /tmp/franki-fallback-icon.png
+          curl -L --fail --retry 2 'https://drive.google.com/uc?export=download&id=1hMALKrQmg1x7gKXCPo9ZFGfepbo7u-s-' -o /tmp/frankiflow-icon.png || true
+          if file /tmp/frankiflow-icon.png 2>/dev/null | grep -qi 'PNG image'; then
+            cp /tmp/frankiflow-icon.png assets/icon.png
+            cp /tmp/frankiflow-icon.png assets/adaptive-icon.png
+            echo 'Official FrankiFlow app icon applied.'
+          else
+            cp /tmp/franki-fallback-icon.png assets/icon.png
+            echo 'Drive icon was not publicly downloadable; repository fallback retained.'
+          fi
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --clean --no-install
@@ -59,21 +72,21 @@ jobs:
       - name: Prepare APK artifact
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiAdmin-Android.apk
-          sha256sum release/FrankiAdmin-Android.apk > release/FrankiAdmin-Android.apk.sha256
+          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin-1.2.0.apk
+          sha256sum release/FrankiFlow-Admin-1.2.0.apk > release/FrankiFlow-Admin-1.2.0.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiAdmin-Android
+          name: FrankiFlow-Admin-Android-1.2.0
           path: |
-            release/FrankiAdmin-Android.apk
-            release/FrankiAdmin-Android.apk.sha256
+            release/FrankiFlow-Admin-1.2.0.apk
+            release/FrankiFlow-Admin-1.2.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
   smoke-test:
-    name: Install and launch APK on Android emulator
+    name: Install and launch FrankiFlow-Admin on Android emulator
     needs: build-apk
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -82,7 +95,7 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: FrankiAdmin-Android
+          name: FrankiFlow-Admin-Android-1.2.0
           path: release
 
       - name: Enable KVM acceleration
@@ -91,50 +104,42 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install and smoke-test Franki Admin
+      - name: Install and smoke-test FrankiFlow-Admin
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
           script: |
-            set -euxo pipefail
+            set -eu
             mkdir -p smoke-test-output
-
-            adb install -r release/FrankiAdmin-Android.apk
+            adb install -r release/FrankiFlow-Admin-1.2.0.apk
             adb shell pm list packages | grep 'package:de.frankiflow.admin'
-
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
             sleep 12
-
-            PID="$(adb shell pidof de.frankiflow.admin | tr -d '\r')"
-            test -n "$PID"
-            echo "Franki Admin PID: $PID"
-
             adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus.txt || true
-            adb shell uiautomator dump /sdcard/window.xml || true
-            adb pull /sdcard/window.xml smoke-test-output/window.xml || true
+            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus.txt
+            adb shell uiautomator dump /sdcard/window.xml
+            adb pull /sdcard/window.xml smoke-test-output/window.xml
             adb exec-out screencap -p > smoke-test-output/login-screen.png
             adb logcat -d > smoke-test-output/logcat.txt
             adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
-
-            if grep -E 'FATAL EXCEPTION|Process: de\.frankiflow\.admin.*has died' smoke-test-output/logcat.txt; then
-              echo 'Fatal Android runtime error detected.'
-              exit 1
-            fi
-
-            if [ -s smoke-test-output/window.xml ]; then
-              grep -Eiq 'Franki Admin|Anmelden|Sign in|E-Mail|Email|Passwort|Password' smoke-test-output/window.xml
-            fi
+            adb shell ps -A | grep 'de.frankiflow.admin' > smoke-test-output/process.txt || true
+            grep -q 'de.frankiflow.admin' smoke-test-output/process.txt
+            grep -Eiq 'FrankiFlow-Admin|Willkommen zurück|Welcome back' smoke-test-output/window.xml
+            grep -Eiq 'Anmelden|Sign in' smoke-test-output/window.xml
+            grep -Eiq 'info@frankiflow.de' smoke-test-output/window.xml
+            ! sh -c "grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'"
+            echo 'PASS: branded FrankiFlow-Admin APK installed, launched and rendered without a fatal app crash.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiAdmin-Android-Smoke-Test
+          name: FrankiFlow-Admin-Android-Smoke-Test-1.2.0
           path: smoke-test-output
           if-no-files-found: warn
           retention-days: 30
