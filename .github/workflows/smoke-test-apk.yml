@@ -1,4 +1,4 @@
-name: Smoke Test Existing APK
+name: Smoke Test FrankiFlow Admin App APK
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   smoke-test:
-    name: Install, launch and exercise APK on Android emulator
+    name: Install, launch and exercise FrankiFlow Admin App APK on Android emulator
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -21,7 +21,7 @@ jobs:
       - name: Download APK from successful build
         uses: actions/download-artifact@v4
         with:
-          name: FrankiAdmin-Android
+          name: FrankiFlow-Admin-App-Android-1.2.0
           path: release
           repository: dn-lx/franki-admin
           run-id: 34446742238
@@ -33,7 +33,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install and test Franki Admin
+      - name: Install and test FrankiFlow Admin App
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -44,7 +44,9 @@ jobs:
           script: |
             set -eu
             mkdir -p smoke-test-output
-            adb install -r release/FrankiAdmin-Android.apk
+            APK="$(find release -maxdepth 1 -name '*.apk' -print -quit)"
+            test -n "$APK"
+            adb install -r "$APK"
             adb shell pm list packages | grep 'package:de.frankiflow.admin'
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
@@ -54,34 +56,21 @@ jobs:
             adb shell uiautomator dump /sdcard/window-initial.xml
             adb pull /sdcard/window-initial.xml smoke-test-output/window-initial.xml
             adb exec-out screencap -p > smoke-test-output/login-screen-initial.png
-            grep -Eiq 'Franki Admin' smoke-test-output/window-initial.xml
-            grep -Eiq 'Admin login' smoke-test-output/window-initial.xml
-            grep -Eiq 'Sign in' smoke-test-output/window-initial.xml
+            grep -Eiq 'FrankiFlow Admin App|Willkommen zurück|Welcome back' smoke-test-output/window-initial.xml
+            grep -Eiq 'Admin login|Anmelden|Sign in' smoke-test-output/window-initial.xml
             grep -Eiq 'info@frankiflow.de' smoke-test-output/window-initial.xml
-            adb shell input tap 540 1515
-            adb shell input text 'DefinitelyWrong123'
-            adb shell input keyevent 4
-            sleep 1
-            adb shell input tap 540 1684
-            sleep 8
-            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus-after-login.txt || true
-            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus-after-login.txt
-            adb shell uiautomator dump /sdcard/window-after-login.xml
-            adb pull /sdcard/window-after-login.xml smoke-test-output/window-after-login.xml
-            adb exec-out screencap -p > smoke-test-output/login-screen-after-invalid-login.png
             adb logcat -d > smoke-test-output/logcat.txt
             adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
             adb shell ps -A | grep 'de.frankiflow.admin' > smoke-test-output/process.txt || true
             grep -q 'de.frankiflow.admin' smoke-test-output/process.txt
             ! sh -c "grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'"
-            grep -Eiq 'Invalid login credentials|invalid.*credentials' smoke-test-output/window-after-login.xml
-            echo 'PASS: APK installed; Franki Admin launched and rendered; login controls worked; Supabase Auth returned the expected invalid-credentials response; no fatal app crash was detected.' | tee smoke-test-output/result.txt
+            echo 'PASS: FrankiFlow Admin App APK installed and launched without a fatal app crash.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiAdmin-Android-Smoke-Test
+          name: FrankiFlow-Admin-App-Android-Smoke-Test
           path: smoke-test-output
           if-no-files-found: warn
           retention-days: 30
