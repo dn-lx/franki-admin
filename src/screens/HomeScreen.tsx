@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BrandLogo } from '../components/BrandLogo';
 import { Badge, Card, ErrorBanner, LoadingBlock, MetricCard, SectionHeader, StatGrid } from '../components/ui';
@@ -23,7 +23,7 @@ type Metrics = {
 const initial: Metrics = { newQuotes: 0, openJobs: 0, flowPaid30: 0, pendingBookings: 0, upcomingBookings: 0, holzPaid30: 0 };
 
 export function HomeScreen({ onOpen }: Props) {
-  const { access, user } = useAuth();
+  const { access } = useAuth();
   const { language } = useLanguage();
   const de = language === 'de';
   const [metrics, setMetrics] = useState(initial);
@@ -96,11 +96,6 @@ export function HomeScreen({ onOpen }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  const firstName = useMemo(() => {
-    const name = user?.email?.split('@')[0] ?? 'Admin';
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  }, [user?.email]);
-
   if (loading) return <LoadingBlock label={de ? 'Dashboard wird geladen …' : 'Loading dashboard …'} />;
 
   return (
@@ -114,7 +109,7 @@ export function HomeScreen({ onOpen }: Props) {
           <View style={styles.heroBadge}><View style={styles.liveDot} /><Text style={styles.heroBadgeText}>ADMIN LIVE</Text></View>
           <Text style={styles.heroMeta}>{de ? 'Heute' : 'Today'}</Text>
         </View>
-        <Text style={styles.heroTitle}>{de ? `Hallo, ${firstName}` : `Hello, ${firstName}`}</Text>
+        <Text style={styles.heroTitle}>Dashboard</Text>
         <Text style={styles.heroSub}>{de ? 'FrankiFlow und FrankiHolz in einem klaren Arbeitsbereich.' : 'FrankiFlow and FrankiHolz in one clear workspace.'}</Text>
         <View style={styles.heroSummary}>
           <View style={styles.heroSummaryItem}><Text style={styles.heroSummaryValue}>{metrics.newQuotes + metrics.pendingBookings}</Text><Text style={styles.heroSummaryLabel}>{de ? 'Neue Anfragen' : 'New requests'}</Text></View>
