@@ -13,6 +13,7 @@ Cross-platform iPhone and Android administration app for the FrankiFlow cleaning
 - Persistent mobile session; service-role and Stripe secret keys are never embedded in the app.
 - User-facing app name: **FrankiFlow Admin App**.
 - Approved dark FrankiFlow symbol-only application icon.
+- Android uses a dedicated transparent adaptive-icon foreground with safe padding over a dark navy launcher background. This keeps the complete house/skyline/broom/wave symbol visible inside circular, rounded-square and other Android launcher masks instead of cropping the artwork.
 
 ### FrankiFlow
 - Quote/request inbox with statuses, contact actions and internal notes.
@@ -34,6 +35,7 @@ Cross-platform iPhone and Android administration app for the FrankiFlow cleaning
 - Shareable Stripe payment link.
 - Safe cancellation of unpaid reservations through the existing payment-expiry Edge Function.
 - Monthly room calendar showing rates, bookings, manual blocks and external iCal blocks.
+- Compact horizontal room selector in the calendar. Room buttons use a fixed 34 px height and horizontal scrolling when required instead of tall generic segment controls.
 - Date-range availability/block controls, price overrides and notes.
 - Room name, description, base price, capacity and online status editing.
 - Room photo uploads and deletes.
@@ -130,8 +132,8 @@ docs/                         Security, deployment and test documentation
 2. Keep service-role and Stripe secrets out of the app.
 3. Customer-facing service checklist edits go live through Supabase and affect the Preisrechner/quotation scope after saving.
 4. Refunds for paid FrankiHolz bookings are intentionally not exposed as a one-tap mobile cancellation because the existing backend requires a proper refund workflow first.
-5. The approved dark application icon is stored in the FrankiFlow project Drive folder and is pulled into the Android build workflow before Expo prebuild.
+5. The regular dark icon and padded adaptive foreground are stored in the FrankiFlow project Drive folder and are pulled into the Android build workflow before Expo prebuild.
 
 ## GitHub Android build
 
-`.github/workflows/android.yml` builds `FrankiFlow-Admin-App-1.2.1.apk`, validates TypeScript, applies the approved dark FrankiFlow symbol-only icon, installs the APK on an Android emulator and performs a launch smoke test. The application shown on the device is named **FrankiFlow Admin App**.
+`.github/workflows/android.yml` builds `FrankiFlow-Admin-App-1.2.2.apk`, validates TypeScript, applies the regular dark icon plus the padded transparent adaptive foreground, installs the APK on an Android emulator and performs a launch smoke test. The application shown on the device is named **FrankiFlow Admin App**.
