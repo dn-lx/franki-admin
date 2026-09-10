@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   smoke-test:
-    name: Install and launch APK on Android emulator
+    name: Install, launch and exercise APK on Android emulator
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -33,7 +33,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install and smoke-test Franki Admin
+      - name: Install and test Franki Admin
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -50,36 +50,45 @@ jobs:
 
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
-            sleep 12
+            sleep 10
 
-            PID="$(adb shell pidof de.frankiflow.admin | tr -d '\r' || true)"
-            echo "Franki Admin PID: ${PID:-not-running}" | tee smoke-test-output/pid.txt
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus-initial.txt || true
+            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus-initial.txt
 
-            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus.txt || true
-            adb shell uiautomator dump /sdcard/window.xml || true
-            adb pull /sdcard/window.xml smoke-test-output/window.xml || true
-            adb exec-out screencap -p > smoke-test-output/login-screen.png || true
-            adb logcat -d > smoke-test-output/logcat.txt || true
-            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt || true
+            adb shell uiautomator dump /sdcard/window-initial.xml
+            adb pull /sdcard/window-initial.xml smoke-test-output/window-initial.xml
+            adb exec-out screencap -p > smoke-test-output/login-screen-initial.png
+            grep -Eiq 'Franki Admin' smoke-test-output/window-initial.xml
+            grep -Eiq 'Admin login' smoke-test-output/window-initial.xml
+            grep -Eiq 'Sign in' smoke-test-output/window-initial.xml
+            grep -Eiq 'info@frankiflow.de' smoke-test-output/window-initial.xml
 
-            if [ -z "$PID" ]; then
-              echo 'Franki Admin process exited after launch.' | tee smoke-test-output/result.txt
-              grep -E -A30 -B5 'FATAL EXCEPTION|AndroidRuntime|ReactNativeJS|SoLoader|UnsatisfiedLinkError|Unable to start activity|Exception' smoke-test-output/logcat.txt > smoke-test-output/crash-extract.txt || true
-              exit 1
-            fi
+            # Exercise password entry and the real Supabase authentication request.
+            adb shell input tap 540 1515
+            adb shell input text 'DefinitelyWrong123'
+            adb shell input keyevent 4
+            sleep 1
+            adb shell input tap 540 1684
+            sleep 8
+
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus-after-login.txt || true
+            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus-after-login.txt
+
+            adb shell uiautomator dump /sdcard/window-after-login.xml
+            adb pull /sdcard/window-after-login.xml smoke-test-output/window-after-login.xml
+            adb exec-out screencap -p > smoke-test-output/login-screen-after-invalid-login.png
+            adb logcat -d > smoke-test-output/logcat.txt
+            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
+            adb shell ps -A | grep 'de.frankiflow.admin' > smoke-test-output/process.txt || true
 
             if grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'; then
               echo 'Fatal Android runtime error detected for Franki Admin.' | tee smoke-test-output/result.txt
               exit 1
             fi
 
-            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus.txt
+            grep -Eiq 'Invalid login credentials|invalid.*credentials' smoke-test-output/window-after-login.xml
 
-            if [ -s smoke-test-output/window.xml ]; then
-              grep -Eiq 'Franki Admin|Anmelden|Sign in|E-Mail|Email|Passwort|Password' smoke-test-output/window.xml
-            fi
-
-            echo 'APK installed, launched, stayed alive and displayed the Franki Admin UI.' | tee smoke-test-output/result.txt
+            echo 'PASS: APK installed; Franki Admin launched and rendered; login controls worked; Supabase Auth returned the expected invalid-credentials response; no fatal app crash was detected.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
         if: always()
