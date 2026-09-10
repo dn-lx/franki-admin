@@ -1,3 +1,4 @@
+// FrankiFlow Admin App 1.2.3 — launcher artwork uses the approved dark icon palette.
 export const APP_NAME = 'FrankiFlow Admin App';
 export const APP_VERSION = '1.2.3';
 
