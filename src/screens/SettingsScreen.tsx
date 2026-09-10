@@ -24,7 +24,7 @@ export function SettingsScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.hero}>
         <View style={styles.heroTop}><BrandLogo kind="frankiflow" compact /><Badge text={APP_VERSION} tone="info" /></View>
-        <Text style={styles.kicker}>FRANKIFLOW-ADMIN</Text>
+        <Text style={styles.kicker}>FRANKIFLOW ADMIN APP</Text>
         <Text style={styles.title}>{de ? 'Einstellungen' : 'Settings'}</Text>
         <Text style={styles.subtitle}>{de ? 'Konto, Sprache, Zugriffsrechte, Backend und App-Informationen.' : 'Account, language, access rights, backend and app information.'}</Text>
       </View>
