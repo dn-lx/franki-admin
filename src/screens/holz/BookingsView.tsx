@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
-import { Badge, Button, Card, EmptyState, ErrorBanner, FormField, KeyValue, LoadingBlock, ModalSheet, SectionHeader, Segments } from '../../components/ui';
+import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Badge, Button, Card, EmptyState, ErrorBanner, FormField, KeyValue, LoadingBlock, ModalSheet, SectionHeader } from '../../components/ui';
 import { useLanguage } from '../../context/LanguageContext';
 import { euro, shortDate, shortDateTime } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
@@ -68,6 +68,14 @@ export function BookingsView() {
     return b.status === filter;
   }), [bookings, filter]);
 
+  const filters: { key: Filter; label: string }[] = [
+    { key: 'all', label: de ? 'Alle' : 'All' },
+    { key: 'pending', label: de ? 'Offen' : 'Pending' },
+    { key: 'confirmed', label: de ? 'Bestätigt' : 'Confirmed' },
+    { key: 'paid', label: de ? 'Bezahlt' : 'Paid' },
+    { key: 'cancelled', label: de ? 'Storniert' : 'Cancelled' },
+  ];
+
   async function approvePayment(booking: HolzBooking) {
     setBusy(true); setError(null);
     const { data, error: fnError } = await supabase.functions.invoke('frankiholz-create-payment', { body: { booking_id: booking.id } });
@@ -129,9 +137,22 @@ export function BookingsView() {
       right={<Button compact variant="holz" title="+" onPress={() => setCreateOpen(true)} />}
     />
     <ErrorBanner message={error} />
-    <Segments accent="holz" value={filter} onChange={(v) => setFilter(v as Filter)} items={[
-      { key: 'all', label: de ? 'Alle' : 'All' }, { key: 'pending', label: de ? 'Offen' : 'Pending' }, { key: 'confirmed', label: de ? 'Bestätigt' : 'Confirmed' }, { key: 'paid', label: de ? 'Bezahlt' : 'Paid' }, { key: 'cancelled', label: de ? 'Storniert' : 'Cancelled' },
-    ]} />
+
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+      {filters.map((item) => {
+        const active = item.key === filter;
+        return (
+          <Pressable
+            key={item.key}
+            onPress={() => setFilter(item.key)}
+            style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && styles.filterChipPressed]}
+          >
+            <Text numberOfLines={1} style={[styles.filterText, active && styles.filterTextActive]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+
     {shown.length === 0 ? <EmptyState title={de ? 'Keine Buchungen' : 'No bookings'} message={de ? 'Neue Buchungsanfragen erscheinen automatisch hier.' : 'New booking requests will appear here automatically.'} /> : shown.map((b) => (
       <Pressable key={b.id} onPress={() => { setSelected(b); setError(null); }}>
         <Card>
@@ -194,6 +215,12 @@ export function BookingsView() {
 }
 
 const styles = StyleSheet.create({
+  filterScroll: { gap: 7, paddingRight: 8, paddingBottom: 11 },
+  filterChip: { height: 34, paddingHorizontal: 11, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  filterChipActive: { backgroundColor: colors.holzDark, borderColor: colors.holzDark },
+  filterChipPressed: { opacity: 0.78 },
+  filterText: { color: colors.text, fontSize: 10.5, lineHeight: 13, fontWeight: '900' },
+  filterTextActive: { color: colors.white },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' },
   title: { color: colors.text, fontSize: 16, fontWeight: '900' }, sub: { color: colors.muted, fontSize: 12, marginTop: 3 },
   price: { color: colors.holz, fontSize: 18, fontWeight: '900' }, dates: { color: colors.text, fontSize: 13, marginTop: 12 },
