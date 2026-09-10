@@ -1,4 +1,4 @@
-export const APP_NAME = 'FrankiFlow-Admin';
+export const APP_NAME = 'FrankiFlow Admin App';
 export const APP_VERSION = '1.2.0';
 
 export const brand = {
