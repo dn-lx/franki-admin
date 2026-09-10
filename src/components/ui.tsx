@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   loadingText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   errorBanner: { backgroundColor: colors.dangerSoft, borderRadius: 16, padding: 12, marginBottom: spacing.md, flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   errorSymbol: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.danger, color: colors.white, textAlign: 'center', lineHeight: 22, fontWeight: '900' },
-  errorText: { color: colors.danger, fontWeight: '750', fontSize: 12.5, lineHeight: 18, flex: 1 },
+  errorText: { color: colors.danger, fontWeight: '700', fontSize: 12.5, lineHeight: 18, flex: 1 },
   modalRoot: { flex: 1, backgroundColor: colors.bg },
   modalHandle: { width: 42, height: 5, borderRadius: 99, backgroundColor: colors.border, alignSelf: 'center', marginTop: 9 },
   modalHeader: { minHeight: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, backgroundColor: colors.bg },
