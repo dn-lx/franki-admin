@@ -9,8 +9,9 @@ import { JobsView } from './flow/JobsView';
 import { PeopleView } from './flow/PeopleView';
 import { BusinessView } from './flow/BusinessView';
 import { WebsiteView } from './flow/WebsiteView';
+import { ChecklistsView } from './flow/ChecklistsView';
 
-type Tab = 'quotes' | 'jobs' | 'people' | 'business' | 'website';
+type Tab = 'quotes' | 'jobs' | 'people' | 'business' | 'website' | 'checklists';
 
 export function FrankiFlowScreen() {
   const { language } = useLanguage();
@@ -22,6 +23,7 @@ export function FrankiFlowScreen() {
     { key: 'jobs', label: de ? 'Aufträge' : 'Jobs' },
     { key: 'people', label: de ? 'Kunden & Team' : 'Clients & Team' },
     { key: 'business', label: de ? 'Zahlungen & Preise' : 'Payments & Pricing' },
+    { key: 'checklists', label: de ? 'Checklisten' : 'Checklists' },
     { key: 'website', label: de ? 'Webseite' : 'Website' },
   ];
 
@@ -32,7 +34,7 @@ export function FrankiFlowScreen() {
         <BrandLogo kind="frankiflow" compact />
         <View style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>OPERATIONS</Text></View>
         <Text style={styles.title}>{de ? 'Reinigungsverwaltung' : 'Cleaning management'}</Text>
-        <Text style={styles.subtitle}>{de ? 'Anfragen, Kunden, Team, Aufträge, Zahlungen und Website an einem Ort.' : 'Quotes, clients, team, jobs, payments and website in one place.'}</Text>
+        <Text style={styles.subtitle}>{de ? 'Anfragen, Kunden, Team, Aufträge, Preise, Checklisten und Website an einem Ort.' : 'Quotes, clients, team, jobs, pricing, checklists and website in one place.'}</Text>
       </View>
       <Segments value={tab} onChange={(v) => setTab(v as Tab)} items={items} />
       <View style={styles.body}>
@@ -40,6 +42,7 @@ export function FrankiFlowScreen() {
         {tab === 'jobs' ? <JobsView /> : null}
         {tab === 'people' ? <PeopleView /> : null}
         {tab === 'business' ? <BusinessView /> : null}
+        {tab === 'checklists' ? <ChecklistsView /> : null}
         {tab === 'website' ? <WebsiteView /> : null}
       </View>
     </ScrollView>
