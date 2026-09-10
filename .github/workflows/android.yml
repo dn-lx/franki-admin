@@ -71,3 +71,70 @@ jobs:
             release/FrankiAdmin-Android.apk.sha256
           if-no-files-found: error
           retention-days: 30
+
+  smoke-test:
+    name: Install and launch APK on Android emulator
+    needs: build-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: FrankiAdmin-Android
+          path: release
+
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and smoke-test Franki Admin
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            set -euxo pipefail
+            mkdir -p smoke-test-output
+
+            adb install -r release/FrankiAdmin-Android.apk
+            adb shell pm list packages | grep 'package:de.frankiflow.admin'
+
+            adb logcat -c
+            adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
+            sleep 12
+
+            PID="$(adb shell pidof de.frankiflow.admin | tr -d '\r')"
+            test -n "$PID"
+            echo "Franki Admin PID: $PID"
+
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus.txt || true
+            adb shell uiautomator dump /sdcard/window.xml || true
+            adb pull /sdcard/window.xml smoke-test-output/window.xml || true
+            adb exec-out screencap -p > smoke-test-output/login-screen.png
+            adb logcat -d > smoke-test-output/logcat.txt
+            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
+
+            if grep -E 'FATAL EXCEPTION|Process: de\.frankiflow\.admin.*has died' smoke-test-output/logcat.txt; then
+              echo 'Fatal Android runtime error detected.'
+              exit 1
+            fi
+
+            if [ -s smoke-test-output/window.xml ]; then
+              grep -Eiq 'Franki Admin|Anmelden|Sign in|E-Mail|Email|Passwort|Password' smoke-test-output/window.xml
+            fi
+
+      - name: Upload emulator test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrankiAdmin-Android-Smoke-Test
+          path: smoke-test-output
+          if-no-files-found: warn
+          retention-days: 30
