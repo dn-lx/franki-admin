@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   EXPO_PUBLIC_SUPABASE_URL: https://bdeajozhylypiidrldka.supabase.co
@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-apk:
-    name: Build FrankiFlow Admin App 1.2.2 APK
+    name: Build FrankiFlow Admin App APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -83,16 +83,16 @@ jobs:
       - name: Prepare APK artifact
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin-App-1.2.2.apk
-          sha256sum release/FrankiFlow-Admin-App-1.2.2.apk > release/FrankiFlow-Admin-App-1.2.2.apk.sha256
+          cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin.apk
+          sha256sum release/FrankiFlow-Admin.apk > release/FrankiFlow-Admin.apk.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-1.2.2
+          name: FrankiFlow-Admin-App-Android
           path: |
-            release/FrankiFlow-Admin-App-1.2.2.apk
-            release/FrankiFlow-Admin-App-1.2.2.apk.sha256
+            release/FrankiFlow-Admin.apk
+            release/FrankiFlow-Admin.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -106,7 +106,7 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-1.2.2
+          name: FrankiFlow-Admin-App-Android
           path: release
 
       - name: Enable KVM acceleration
@@ -126,7 +126,7 @@ jobs:
           script: |
             set -eu
             mkdir -p smoke-test-output
-            adb install -r release/FrankiFlow-Admin-App-1.2.2.apk
+            adb install -r release/FrankiFlow-Admin.apk
             adb shell pm list packages | grep 'package:de.frankiflow.admin'
             adb logcat -c
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
@@ -144,13 +144,13 @@ jobs:
             grep -Eiq 'Anmelden|Sign in' smoke-test-output/window.xml
             grep -Eiq 'info@frankiflow.de' smoke-test-output/window.xml
             ! sh -c "grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'"
-            echo 'PASS: FrankiFlow Admin App 1.2.2 installed, launched and rendered without a fatal app crash.' | tee smoke-test-output/result.txt
+            echo 'PASS: FrankiFlow Admin App installed, launched and rendered without a fatal app crash.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-Smoke-Test-1.2.2
+          name: FrankiFlow-Admin-App-Android-Smoke-Test
           path: smoke-test-output
           if-no-files-found: warn
           retention-days: 30
@@ -160,18 +160,15 @@ jobs:
     needs: smoke-test
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
 
     steps:
       - name: Download tested APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android-1.2.2
+          name: FrankiFlow-Admin-App-Android
           path: release
-
-      - name: Prepare stable APK filenames
-        run: |
-          cp release/FrankiFlow-Admin-App-1.2.2.apk release/FrankiFlow-Admin.apk
-          sha256sum release/FrankiFlow-Admin.apk > release/FrankiFlow-Admin.apk.sha256
 
       - name: Publish GitHub Release
         env:
