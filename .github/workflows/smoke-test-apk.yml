@@ -52,29 +52,34 @@ jobs:
             adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
             sleep 12
 
-            PID="$(adb shell pidof de.frankiflow.admin | tr -d '\r')"
-            test -n "$PID"
-            echo "Franki Admin PID: $PID"
+            PID="$(adb shell pidof de.frankiflow.admin | tr -d '\r' || true)"
+            echo "Franki Admin PID: ${PID:-not-running}" | tee smoke-test-output/pid.txt
 
             adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus.txt || true
-            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus.txt
-
             adb shell uiautomator dump /sdcard/window.xml || true
             adb pull /sdcard/window.xml smoke-test-output/window.xml || true
-            adb exec-out screencap -p > smoke-test-output/login-screen.png
-            adb logcat -d > smoke-test-output/logcat.txt
-            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
+            adb exec-out screencap -p > smoke-test-output/login-screen.png || true
+            adb logcat -d > smoke-test-output/logcat.txt || true
+            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt || true
 
-            if grep -A8 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'; then
-              echo 'Fatal Android runtime error detected for Franki Admin.'
+            if [ -z "$PID" ]; then
+              echo 'Franki Admin process exited after launch.' | tee smoke-test-output/result.txt
+              grep -E -A30 -B5 'FATAL EXCEPTION|AndroidRuntime|ReactNativeJS|SoLoader|UnsatisfiedLinkError|Unable to start activity|Exception' smoke-test-output/logcat.txt > smoke-test-output/crash-extract.txt || true
               exit 1
             fi
+
+            if grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'; then
+              echo 'Fatal Android runtime error detected for Franki Admin.' | tee smoke-test-output/result.txt
+              exit 1
+            fi
+
+            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus.txt
 
             if [ -s smoke-test-output/window.xml ]; then
               grep -Eiq 'Franki Admin|Anmelden|Sign in|E-Mail|Email|Passwort|Password' smoke-test-output/window.xml
             fi
 
-            echo 'APK installed, launched, stayed alive and displayed the Franki Admin UI.' > smoke-test-output/result.txt
+            echo 'APK installed, launched, stayed alive and displayed the Franki Admin UI.' | tee smoke-test-output/result.txt
 
       - name: Upload emulator test evidence
         if: always()
