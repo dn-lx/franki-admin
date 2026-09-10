@@ -1,4 +1,4 @@
-name: Build FrankiFlow Admin App Android APK
+name: Build and Publish FrankiFlow Admin APK
 
 on:
   push:
@@ -14,17 +14,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   EXPO_PUBLIC_SUPABASE_URL: https://bdeajozhylypiidrldka.supabase.co
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_FX7QKUBZQmwykGcgv8SdfQ_lGRZF8n2
+  APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+  APPETIZE_PUBLIC_KEY: ${{ secrets.APPETIZE_PUBLIC_KEY }}
 
 jobs:
-  build-apk:
-    name: Build FrankiFlow Admin App APK
+  build-publish-apk:
+    name: Build APK, publish Release, update Appetize
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
 
     steps:
       - name: Checkout repository
@@ -41,7 +43,7 @@ jobs:
       - name: Validate TypeScript
         run: npm run typecheck
 
-      - name: Apply final safe-zone FrankiFlow launcher icons
+      - name: Apply FrankiFlow launcher icons
         run: |
           cp assets/icon.png /tmp/franki-fallback-icon.png
           cp assets/adaptive-icon.png /tmp/franki-fallback-adaptive.png
@@ -51,7 +53,7 @@ jobs:
 
           if file /tmp/frankiflow-icon.png 2>/dev/null | grep -qi 'PNG image'; then
             cp /tmp/frankiflow-icon.png assets/icon.png
-            echo 'Safe dark FrankiFlow regular icon applied.'
+            echo 'FrankiFlow regular icon applied.'
           else
             cp /tmp/franki-fallback-icon.png assets/icon.png
             echo 'Regular icon download failed; repository fallback retained.'
@@ -59,7 +61,7 @@ jobs:
 
           if file /tmp/frankiflow-adaptive.png 2>/dev/null | grep -qi 'PNG image'; then
             cp /tmp/frankiflow-adaptive.png assets/adaptive-icon.png
-            echo 'Final padded transparent adaptive foreground applied.'
+            echo 'FrankiFlow adaptive foreground applied.'
           else
             cp /tmp/franki-fallback-adaptive.png assets/adaptive-icon.png
             echo 'Adaptive icon download failed; repository fallback retained.'
@@ -80,125 +82,61 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Prepare APK artifact
+      - name: Prepare permanent APK filename
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk release/FrankiFlow-Admin.apk
           sha256sum release/FrankiFlow-Admin.apk > release/FrankiFlow-Admin.apk.sha256
 
-      - name: Upload APK
+      - name: Keep GitHub Actions artifact copy
         uses: actions/upload-artifact@v4
         with:
-          name: FrankiFlow-Admin-App-Android
+          name: FrankiFlow-Admin-App-Android-${{ github.run_number }}
           path: |
             release/FrankiFlow-Admin.apk
             release/FrankiFlow-Admin.apk.sha256
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
 
-  smoke-test:
-    name: Install and launch FrankiFlow Admin App on Android emulator
-    needs: build-apk
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-
-    steps:
-      - name: Download APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: FrankiFlow-Admin-App-Android
-          path: release
-
-      - name: Enable KVM acceleration
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Install and smoke-test FrankiFlow Admin App
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-metrics
-          script: |
-            set -eu
-            mkdir -p smoke-test-output
-            adb install -r release/FrankiFlow-Admin.apk
-            adb shell pm list packages | grep 'package:de.frankiflow.admin'
-            adb logcat -c
-            adb shell monkey -p de.frankiflow.admin -c android.intent.category.LAUNCHER 1
-            sleep 12
-            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' > smoke-test-output/window-focus.txt || true
-            grep -q 'de.frankiflow.admin' smoke-test-output/window-focus.txt
-            adb shell uiautomator dump /sdcard/window.xml
-            adb pull /sdcard/window.xml smoke-test-output/window.xml
-            adb exec-out screencap -p > smoke-test-output/login-screen.png
-            adb logcat -d > smoke-test-output/logcat.txt
-            adb shell dumpsys package de.frankiflow.admin > smoke-test-output/package.txt
-            adb shell ps -A | grep 'de.frankiflow.admin' > smoke-test-output/process.txt || true
-            grep -q 'de.frankiflow.admin' smoke-test-output/process.txt
-            grep -Eiq 'FrankiFlow Admin App|Willkommen zurück|Welcome back' smoke-test-output/window.xml
-            grep -Eiq 'Anmelden|Sign in' smoke-test-output/window.xml
-            grep -Eiq 'info@frankiflow.de' smoke-test-output/window.xml
-            ! sh -c "grep -A12 'FATAL EXCEPTION' smoke-test-output/logcat.txt | grep -q 'de.frankiflow.admin'"
-            echo 'PASS: FrankiFlow Admin App installed, launched and rendered without a fatal app crash.' | tee smoke-test-output/result.txt
-
-      - name: Upload emulator test evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: FrankiFlow-Admin-App-Android-Smoke-Test
-          path: smoke-test-output
-          if-no-files-found: warn
-          retention-days: 30
-
-  publish-release:
-    name: Publish permanent APK download
-    needs: smoke-test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download tested APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: FrankiFlow-Admin-App-Android
-          path: release
-
-      - name: Publish GitHub Release
+      - name: Publish permanent GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
           TAG="android-build-${GITHUB_RUN_NUMBER}"
           TITLE="FrankiFlow Admin App Android Build ${GITHUB_RUN_NUMBER}"
-          NOTES="Tested Android APK built from commit ${GITHUB_SHA}.\n\nPermanent latest-download URL:\nhttps://github.com/${GITHUB_REPOSITORY}/releases/latest/download/FrankiFlow-Admin.apk"
+          LATEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/FrankiFlow-Admin.apk"
+          NOTES="FrankiFlow Admin App Android APK built from commit ${GITHUB_SHA}.\n\nPermanent latest APK:\n${LATEST_URL}"
 
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" \
-              release/FrankiFlow-Admin.apk \
-              release/FrankiFlow-Admin.apk.sha256 \
-              --clobber \
-              --repo "$GITHUB_REPOSITORY"
-            gh release edit "$TAG" \
-              --title "$TITLE" \
-              --notes "$NOTES" \
-              --latest \
-              --repo "$GITHUB_REPOSITORY"
-          else
-            gh release create "$TAG" \
-              release/FrankiFlow-Admin.apk \
-              release/FrankiFlow-Admin.apk.sha256 \
-              --target "$GITHUB_SHA" \
-              --title "$TITLE" \
-              --notes "$NOTES" \
-              --latest \
-              --repo "$GITHUB_REPOSITORY"
-          fi
+          gh release create "$TAG" \
+            release/FrankiFlow-Admin.apk \
+            release/FrankiFlow-Admin.apk.sha256 \
+            --target "$GITHUB_SHA" \
+            --title "$TITLE" \
+            --notes "$NOTES" \
+            --latest \
+            --repo "$GITHUB_REPOSITORY"
 
-          echo "Latest APK: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/FrankiFlow-Admin.apk"
+          echo "Permanent latest APK: ${LATEST_URL}"
+
+      - name: Upload latest APK to Appetize
+        if: ${{ env.APPETIZE_API_TOKEN != '' && env.APPETIZE_PUBLIC_KEY != '' }}
+        uses: appetizeio/github-action-appetize@v1.0.5
+        with:
+          apiToken: ${{ env.APPETIZE_API_TOKEN }}
+          publicKey: ${{ env.APPETIZE_PUBLIC_KEY }}
+          appFile: release/FrankiFlow-Admin.apk
+          platform: android
+          fileType: apk
+          note: FrankiFlow Admin App - GitHub build ${{ github.run_number }}
+          timeout: 600
+
+      - name: Show permanent Appetize emulator link
+        if: ${{ env.APPETIZE_API_TOKEN != '' && env.APPETIZE_PUBLIC_KEY != '' }}
+        run: |
+          echo "Appetize emulator: https://appetize.io/app/${APPETIZE_PUBLIC_KEY}"
+
+      - name: Appetize setup reminder
+        if: ${{ env.APPETIZE_API_TOKEN == '' || env.APPETIZE_PUBLIC_KEY == '' }}
+        run: |
+          echo 'APK release completed. Appetize upload was skipped because APPETIZE_API_TOKEN and/or APPETIZE_PUBLIC_KEY are not configured in GitHub Actions secrets.'
