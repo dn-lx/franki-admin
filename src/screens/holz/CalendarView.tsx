@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, ErrorBanner, FormField, LoadingBlock, ModalSheet, SectionHeader, Segments } from '../../components/ui';
 import { useLanguage } from '../../context/LanguageContext';
 import { euro, isoDateLocal, monthLabel, monthRange, safeNumber } from '../../lib/format';
@@ -52,7 +52,20 @@ export function CalendarView() {
   return <>
     <SectionHeader title={de ? 'Kalender & Verfügbarkeit' : 'Calendar & availability'} subtitle={de ? 'Preise, Sperren, Buchungen und externe Kalender in einer Ansicht.' : 'Rates, blocks, bookings and external calendars in one view.'} />
     <ErrorBanner message={error} />
-    <Segments accent="holz" value={roomId} onChange={setRoomId} items={rooms.map((r) => ({ key: r.id, label: r.name }))} />
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.roomTabs}>
+      {rooms.map((room) => {
+        const active = room.id === roomId;
+        return (
+          <Pressable
+            key={room.id}
+            onPress={() => setRoomId(room.id)}
+            style={({ pressed }) => [styles.roomTab, active && styles.roomTabActive, pressed && { opacity: 0.78 }]}
+          >
+            <Text numberOfLines={1} style={[styles.roomTabText, active && styles.roomTabTextActive]}>{room.name}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
     <Card>
       <View style={styles.monthNav}><Button compact variant="secondary" title="‹" onPress={prev} /><Text style={styles.month}>{monthLabel(month, language)}</Text><Button compact variant="secondary" title="›" onPress={next} /></View>
       {loading ? <LoadingBlock /> : <>
@@ -83,6 +96,11 @@ export function CalendarView() {
 }
 
 const styles = StyleSheet.create({
+  roomTabs: { gap: 7, paddingBottom: 11, paddingRight: 8 },
+  roomTab: { height: 34, minWidth: 78, maxWidth: 150, paddingHorizontal: 12, borderRadius: 11, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  roomTabActive: { backgroundColor: colors.holzDark, borderColor: colors.holzDark },
+  roomTabText: { color: colors.text, fontSize: 11.5, fontWeight: '900' },
+  roomTabTextActive: { color: colors.white },
   monthNav: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:16 }, month: { color:colors.text, fontSize:17, fontWeight:'900', textTransform:'capitalize' },
   week: { flexDirection:'row' }, weekText: { width:'14.285%', textAlign:'center', color:colors.muted, fontSize:11, fontWeight:'800', paddingBottom:7 }, grid: { flexDirection:'row', flexWrap:'wrap' },
   cell: { width:'14.285%', aspectRatio:0.88, padding:5, borderWidth:StyleSheet.hairlineWidth, borderColor:colors.border, backgroundColor:colors.surface, minHeight:50 }, booked: { backgroundColor:colors.holz }, blocked: { backgroundColor:colors.muted }, external: { backgroundColor:colors.info },
